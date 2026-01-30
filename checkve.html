@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vé & Trao Giải 2026 (Mobile Final)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #1565c0; --red: #d32f2f; --green: #2e7d32; --bg: #f0f2f5; }
+        
+        body { 
+            font-family: 'Roboto', sans-serif; background: var(--bg); 
+            margin: 0; padding: 10px; color: #333;
+            padding-bottom: 150px !important; /* Chống che banner Tiiny */
+        }
+
+        .container { 
+            max-width: 1200px; margin: 0 auto; 
+            display: flex; flex-direction: column; gap: 15px; /* Xếp dọc cho Mobile */
+        }
+        
+        /* Giao diện PC (Khi màn hình lớn hơn 768px) */
+        @media (min-width: 768px) {
+            .container { display: grid; grid-template-columns: 350px 1fr; }
+        }
+
+        .card { 
+            background: white; border-radius: 12px; padding: 15px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        }
+        
+        h2 { 
+            color: var(--primary); margin: 0 0 15px 0; 
+            border-bottom: 2px solid #eee; padding-bottom: 10px; 
+            font-size: 1.1rem; font-weight: 700;
+        }
+        
+        input, select { 
+            width: 100%; padding: 12px; margin-bottom: 10px; 
+            border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; 
+        }
+        
+        button { 
+            cursor: pointer; border: none; border-radius: 8px; 
+            padding: 12px; font-weight: bold; transition: 0.2s; font-size: 1rem; 
+        }
+        .btn-full { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--green); color: white; }
+        .btn-red { background: var(--red); color: white; }
+        .btn-orange { background: #ff9800; color: white; }
+
+        /* LIST GIẢI THƯỞNG */
+        .prize-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 5px; border: 1px solid #eee;
+        }
+
+        /* TABLE */
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; background: white; min-width: 100%; }
+        th { background: #e3f2fd; padding: 10px; text-align: left; color: var(--primary); white-space: nowrap; font-size: 0.9rem; }
+        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        
+        tr.winner-row { background-color: #ffebee !important; }
+        .winner-badge { background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+
+        /* MODAL */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 99999; display: none; 
+            justify-content: center; align-items: center; padding-bottom: 50px;
+        }
+        .modal-content { 
+            background: white; padding: 20px; border-radius: 12px; 
+            width: 90%; max-width: 500px; position: relative; max-height: 80vh; overflow-y: auto; text-align: center;
+        }
+        .close-modal { 
+            position: absolute; top: 10px; left: 10px; 
+            font-size: 1.5rem; width: 35px; height: 35px; background: #ffebee; 
+            color: var(--red); border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; font-weight: bold; cursor: pointer;
+        }
+
+        /* VÉ VISUAL */
+        .ticket-design {
+            border: 2px solid var(--primary); border-radius: 12px; overflow: hidden; display: flex;
+            width: 100%; max-width: 400px; height: 180px; background: white; margin: 0 auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .ticket-left {
+            flex: 2; background: linear-gradient(135deg, var(--primary), #42a5f5); color: white;
+            padding: 15px; display: flex; flex-direction: column; justify-content: center;
+            border-right: 2px dashed white; text-align: left;
+        }
+        .ticket-right { flex: 1; padding: 5px; display: flex; align-items: center; justify-content: center; background: white; }
+        .t-name { font-size: 1.2rem; font-weight: bold; margin: 5px 0; color: #ffca28; text-transform: uppercase; }
+        .t-code { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace; display: inline-block; margin-top: 5px; font-size: 0.8rem; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .print-page-break { page-break-after: always; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="card" style="border: 2px solid #ff9800;">
+        <h2>📸 BẮT ĐẦU TRAO GIẢI</h2>
+        <div style="margin-bottom: 5px; font-size: 0.9rem; color: #666;">Chọn giải thưởng bạn muốn trao:</div>
+        <select id="currentPrizeSelect" style="font-weight:bold; color:var(--primary); border: 2px solid var(--primary);">
+            <option value="">-- Chưa có giải thưởng --</option>
+        </select>
+        <button class="btn-full" style="background:#ff9800; color:white; font-size:1.1rem; padding:15px;" onclick="openScanner()">
+            <i class="fas fa-qrcode"></i> BẬT CAMERA QUÉT VÉ
+        </button>
+    </div>
+
+    <div class="card">
+        <h2>🎁 CÀI ĐẶT GIẢI THƯỞNG</h2>
+        <div style="display:flex; gap:8px; margin-bottom: 10px;">
+            <input type="text" id="prizeInput" placeholder="Nhập tên giải (VD: Giải Nhất)..." style="margin-bottom:0;">
+            <button class="btn-blue" style="width: 50px;" onclick="addPrize()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        <div id="prizeListWrapper" style="max-height: 150px; overflow-y: auto;">
+            <div style="text-align:center; color:#999; font-size:0.9rem;">Chưa có giải nào</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>⚙️ DỮ LIỆU NHÂN VIÊN</h2>
+        <details>
+            <summary style="padding:10px; background:#f5f5f5; border-radius:8px; cursor:pointer; font-weight:bold;">📂 Nhập File Excel</summary>
+            <div style="margin-top:10px;">
+                <input type="file" id="excelFile" accept=".xlsx, .xls">
+                <div style="font-size:0.8rem; margin-bottom:10px; line-height:1.4; color:#555;">
+                    Cột A: Mã NV | B: Tên | C: Bộ Phận <br>
+                    Cột D: Số lượng vé | E: Mã vé (tùy chọn)
+                </div>
+                <button class="btn-green btn-full" onclick="exportExcel()">
+                    <i class="fas fa-file-excel"></i> Tải Dữ Liệu Về (Excel)
+                </button>
+            </div>
+        </details>
+        
+        <button class="btn-orange btn-full" style="margin-top:10px;" onclick="preparePrintAll()">
+            <i class="fas fa-print"></i> In Tất Cả Vé (PDF)
+        </button>
+    </div>
+
+    <div class="card">
+        <h2>
+            <span>📋 DANH SÁCH (<span id="totalCount">0</span>)</span>
+            <button class="btn-red" style="padding:5px 10px; font-size:0.8rem; width:auto;" onclick="clearData()">Xóa Hết</button>
+        </h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mã Vé</th>
+                        <th>Thông Tin</th>
+                        <th>Trạng Thái</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal-overlay" id="scanModal">
+    <div class="modal-content">
+        <div class="close-modal" onclick="closeScanner()">&times;</div>
+        <h3>📸 KẾT QUẢ QUÉT</h3>
+        <div id="reader" style="width:100%; border-radius:8px; overflow:hidden; background:black;"></div>
+        
+        <div id="scanResultPanel" style="display:none; margin-top:15px;">
+            <div style="color:var(--green); font-weight:bold; font-size:1.2rem;">✅ VÉ HỢP LỆ</div>
+            <h2 id="sName" style="margin:5px 0; color:var(--primary);">NGUYỄN VĂN A</h2>
+            <div style="font-size:0.9rem; color:#666;">ID: <span id="sID">---</span> | <span id="sDept">---</span></div>
+            
+            <div style="background:#fff3e0; padding:15px; margin:15px 0; border-radius:8px; border:1px dashed #ff9800;">
+                Trao giải: <b id="sPrize" style="color:var(--red); font-size:1.3rem; display:block;">---</b>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="btn-green btn-full" onclick="confirmWin(true)">Trao & Tiếp</button>
+                <button class="btn-blue btn-full" onclick="confirmWin(false)">Xong</button>
+            </div>
+        </div>
+
+        <div id="scanErrorPanel" style="display:none; margin-top:20px;">
+            <div style="color:var(--red); font-weight:bold; font-size:1.2rem;">❌ LỖI</div>
+            <p id="errorMsg">Mã không tồn tại trong hệ thống.</p>
+            <button class="btn-blue" onclick="resetScannerUI()">Thử lại</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="ticketModal">
+    <div class="modal-content">
+        <div class="close-modal" onclick="closeTicketModal()">&times;</div>
+        <h3>CHI TIẾT VÉ</h3>
+        <div id="ticketRenderer">
+            <div class="ticket-design">
+                <div class="ticket-left">
+                    <div style="font-size:0.7rem; opacity:0.8;">YEAR END PARTY 2026</div>
+                    <div class="t-name" id="vName">...</div>
+                    <div style="font-size:0.85rem;">
+                        <div>ID: <span id="vID">...</span></div>
+                        <div>BP: <span id="vDept">...</span></div>
+                    </div>
+                    <div class="t-code" id="vCode">...</div>
+                </div>
+                <div class="ticket-right">
+                    <div id="vQR"></div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+            <button class="btn-blue" onclick="downloadTicketImage()">Tải Ảnh</button>
+        </div>
+    </div>
+</div>
+
+<div id="printArea" style="display:none;"></div>
+
+<script>
+    // --- DATABASE ---
+    let tickets = JSON.parse(localStorage.getItem("db_tickets_final") || "[]");
+    let prizes = JSON.parse(localStorage.getItem("db_prizes_final") || "[]");
+    let html5QrcodeScanner = null;
+    let foundIndex = -1;
+
+    // --- KHỞI CHẠY ---
+    renderTable();
+    renderPrizeList();
+    renderPrizeSelect();
+
+    // 1. HÀM TẠO MÃ CỐ ĐỊNH (HASH)
+    function generateConsistentCode(staffId, index) {
+        const str = staffId + "_VE_" + index + "_KEY_2026"; 
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
+        let c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+        return "00000".substring(0, 5 - c.length) + c; 
+    }
+
+    // 2. XỬ LÝ GIẢI THƯỞNG (ĐÃ TÁCH RIÊNG)
+    function addPrize() {
+        const input = document.getElementById("prizeInput");
+        const val = input.value.trim();
+        if(val) {
+            prizes.push(val);
+            input.value = "";
+            saveData();
+            renderPrizeList();
+            renderPrizeSelect();
+        } else {
+            alert("Vui lòng nhập tên giải thưởng!");
+        }
+    }
+
+    function renderPrizeList() {
+        const div = document.getElementById("prizeListWrapper");
+        if(prizes.length === 0) {
+            div.innerHTML = '<div style="text-align:center; color:#999; font-size:0.9rem; padding:10px;">Chưa có giải nào</div>';
+            return;
+        }
+        div.innerHTML = "";
+        prizes.forEach((p, i) => {
+            div.innerHTML += `
+                <div class="prize-item">
+                    <span>🎁 <strong>${p}</strong></span>
+                    <span onclick="removePrize(${i})" style="color:var(--red); font-weight:bold; cursor:pointer; padding:5px;">&times;</span>
+                </div>
+            `;
+        });
+    }
+
+    function renderPrizeSelect() {
+        const sel = document.getElementById("currentPrizeSelect");
+        if(prizes.length === 0) {
+            sel.innerHTML = '<option value="">-- Vui lòng thêm giải thưởng ở dưới --</option>';
+        } else {
+            // Giữ lại giá trị đang chọn nếu có
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">-- Chọn giải cần trao --</option>';
+            prizes.forEach(p => {
+                sel.innerHTML += `<option value="${p}">${p}</option>`;
+            });
+            if(prizes.includes(currentVal)) sel.value = currentVal;
+        }
+    }
+
+    function removePrize(index) {
+        if(confirm("Bạn chắc chắn muốn xóa giải này?")) {
+            prizes.splice(index, 1);
+            saveData();
+            renderPrizeList();
+            renderPrizeSelect();
+        }
+    }
+
+    // 3. IMPORT EXCEL
+    document.getElementById('excelFile').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const wb = XLSX.read(evt.target.result, {type:'array'});
+            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+            let count = 0;
+            
+            json.slice(1).forEach(r => {
+                if(r[0] && r[1]) {
+                    let qty = parseInt(r[3]) || 1; if(qty < 1) qty = 1;
+                    let manualCode = r[4] ? String(r[4]).trim() : null;
+
+                    for(let i = 0; i < qty; i++) {
+                        let finalCode = (manualCode && i===0) ? manualCode : String(r[0]) + "-" + generateConsistentCode(String(r[0]), i+1);
+                        if(!tickets.find(t => t.code === finalCode)) {
+                            tickets.push({ staffId:String(r[0]), name:String(r[1]), dept:String(r[2]||""), code:finalCode, prize:null });
+                        }
+                    }
+                    count++;
+                }
+            });
+            alert(`Đã nhập xong dữ liệu của ${count} nhân viên.`);
+            saveData(); renderTable();
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // 4. HIỂN THỊ BẢNG
+    function renderTable() {
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+        document.getElementById("totalCount").innerText = tickets.length;
+
+        tickets.forEach((t, idx) => {
+            const tr = document.createElement("tr");
+            if(t.prize) tr.className = "winner-row";
+            const status = t.prize ? `<span class="winner-badge">${t.prize}</span>` : `<span style="color:#ccc">-</span>`;
+            
+            tr.innerHTML = `
+                <td style="font-weight:bold; color:var(--primary); font-family:monospace;">${t.code}</td>
+                <td>
+                    <div style="font-weight:bold;">${t.name}</div>
+                    <div style="font-size:0.8rem; color:#666;">${t.staffId}</div>
+                </td>
+                <td>${status}</td>
+                <td>
+                    <button class="btn-blue" style="padding:6px 10px;" onclick="viewTicket(${idx})"><i class="fas fa-eye"></i></button>
+                    ${t.prize ? `<button class="btn-red" style="padding:6px 10px;" onclick="cancelPrize(${idx})">&times;</button>` : ''}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 5. QUÉT QR
+    function openScanner() {
+        const prize = document.getElementById("currentPrizeSelect").value;
+        if(!prize) return alert("⚠️ Bạn chưa chọn Giải Thưởng cần trao kìa!");
+        
+        document.getElementById("sPrize").innerText = prize;
+        document.getElementById("scanModal").style.display = "flex";
+        resetScannerUI();
+
+        if(!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
+        html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess);
+    }
+
+    function onScanSuccess(decodedText) {
+        html5QrcodeScanner.pause();
+        foundIndex = tickets.findIndex(t => t.code === decodedText);
+        const prizeName = document.getElementById("currentPrizeSelect").value;
+        document.getElementById("reader").style.display = "none";
+
+        if(foundIndex !== -1) {
+            const t = tickets[foundIndex];
+            
+            // Logic check trùng
+            const otherWins = tickets.filter(x => x.staffId === t.staffId && x.prize !== null && x.code !== t.code);
+            const isDuplicate = otherWins.find(w => w.prize === prizeName);
+
+            if(t.prize) {
+                showError(`Vé này đã dùng rồi! (Đã trúng: ${t.prize})`);
+            } else if(isDuplicate) {
+                showError(`Người này đã nhận giải "${prizeName}" ở vé khác rồi!`);
+            } else {
+                // Hợp lệ
+                document.getElementById("scanResultPanel").style.display = "block";
+                document.getElementById("sName").innerText = t.name;
+                document.getElementById("sID").innerText = t.staffId;
+                document.getElementById("sDept").innerText = t.dept;
+                
+                if(otherWins.length > 0) {
+                    // Thông báo nhỏ nếu đã trúng giải khác
+                    alert(`ℹ️ Lưu ý: Người này đã từng trúng: ${otherWins.map(w=>w.prize).join(", ")}`);
+                }
+            }
+        } else {
+            showError("Mã không tồn tại trong hệ thống!");
+        }
+    }
+
+    function showError(msg) {
+        document.getElementById("scanErrorPanel").style.display = "block";
+        document.getElementById("errorMsg").innerText = msg;
+    }
+
+    function confirmWin(scanNext) {
+        if(foundIndex !== -1) {
+            tickets[foundIndex].prize = document.getElementById("currentPrizeSelect").value;
+            saveData(); renderTable();
+            if(scanNext) { resetScannerUI(); html5QrcodeScanner.resume(); } else { closeScanner(); }
+        }
+    }
+
+    function resetScannerUI() {
+        document.getElementById("reader").style.display = "block";
+        document.getElementById("scanResultPanel").style.display = "none";
+        document.getElementById("scanErrorPanel").style.display = "none";
+        if(html5QrcodeScanner) html5QrcodeScanner.resume();
+    }
+    function closeScanner() { if(html5QrcodeScanner) html5QrcodeScanner.stop().catch(()=>{}); document.getElementById("scanModal").style.display = "none"; }
+
+    // 6. TIỆN ÍCH KHÁC
+    function viewTicket(idx) {
+        let t = tickets[idx];
+        document.getElementById("ticketModal").style.display = "flex";
+        document.getElementById("vName").innerText = t.name;
+        document.getElementById("vID").innerText = t.staffId;
+        document.getElementById("vDept").innerText = t.dept;
+        document.getElementById("vCode").innerText = t.code;
+        document.getElementById("vQR").innerHTML = "";
+        new QRCode(document.getElementById("vQR"), { text: t.code, width: 90, height: 90 });
+    }
+    function closeTicketModal() { document.getElementById("ticketModal").style.display = "none"; }
+    
+    function downloadTicketImage() {
+        html2canvas(document.querySelector(".ticket-design")).then(canvas => {
+            let link = document.createElement('a'); link.download = 'Ve_Moi.png'; link.href = canvas.toDataURL(); link.click();
+        });
+    }
+    function clearData() { if(confirm("Xóa toàn bộ dữ liệu?")) { localStorage.removeItem("db_tickets_final"); localStorage.removeItem("db_prizes_final"); location.reload(); } }
+    function cancelPrize(i) { if(confirm("Hủy giải này?")) { tickets[i].prize = null; saveData(); renderTable(); } }
+    function exportExcel() {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(tickets);
+        XLSX.utils.book_append_sheet(wb, ws, "Data");
+        XLSX.writeFile(wb, "DuLieu_Ve.xlsx");
+    }
+    function preparePrintAll() {
+        if(!confirm(`In ${tickets.length} vé?`)) return;
+        const div = document.getElementById("printArea"); div.innerHTML = "";
+        tickets.forEach(t => {
+            let d = document.createElement("div"); d.className="print-page-break";
+            d.innerHTML = document.querySelector(".ticket-design").outerHTML;
+            d.querySelector(".t-name").innerText = t.name;
+            d.querySelector("#vID").innerText = t.staffId;
+            d.querySelector("#vDept").innerText = t.dept;
+            d.querySelector(".t-code").innerText = t.code;
+            d.querySelector("#vQR").id = "qr_"+t.code; d.querySelector("#qr_"+t.code).innerHTML = "";
+            div.appendChild(d);
+            new QRCode(document.getElementById("qr_"+t.code), { text: t.code, width: 100, height: 100 });
+        });
+        window.print();
+    }
+    function saveData() { 
+        localStorage.setItem("db_tickets_final", JSON.stringify(tickets)); 
+        localStorage.setItem("db_prizes_final", JSON.stringify(prizes)); 
+    }
+</script>
+
+</body>
+</html>
